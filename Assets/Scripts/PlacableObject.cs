@@ -9,6 +9,7 @@ public class PlacableObject : MonoBehaviour
     private Rigidbody _rigidbody;
     private MeshRenderer[] _renderers;
     private Collider[] _colliders;
+    private Vector3 _boundsSize;
     
     public Vector3 PlacedPosition { get; set; }
 
@@ -31,10 +32,14 @@ public class PlacableObject : MonoBehaviour
     public void Select()
     {
         _rigidbody.isKinematic = true;
+        _boundsSize = GenerateBounds();
+
         foreach (MeshRenderer meshRenderer in _renderers)
             meshRenderer.sharedMaterial = _selectMaterial;
         foreach (Collider coll in _colliders)
             coll.enabled = false;
+
+        print(_boundsSize);
     }
 
     public void Activate()
@@ -53,10 +58,25 @@ public class PlacableObject : MonoBehaviour
 
     public void UpdateSelectedPosition(Vector3 raycastOrigin)
     {
-        if (Physics.Raycast(raycastOrigin, Vector3.down * 1000f, out var hitInfo))
+        if (Physics.BoxCast(raycastOrigin, _boundsSize * .5f, Vector3.down * 1000f, out var hitInfo))
         {
-            transform.position = hitInfo.point;
-
+            transform.position = new Vector3(raycastOrigin.x, hitInfo.point.y, raycastOrigin.z);
         }
+    }
+
+    private Vector3 GenerateBounds()
+    {
+        Vector3 max = Vector3.one * -10000f;
+        Vector3 min = Vector3.one * 10000f;
+        
+        foreach (var c in _colliders)
+        {
+            max = Vector3.Max(max, c.bounds.max);
+            print("Max: " + max);
+            min = Vector3.Min(min, c.bounds.min);
+            print("Min: " + min);
+        }
+
+        return max - min;
     }
 }
